@@ -1,0 +1,6 @@
+hostname: red_button
+user: alarm
+sound_file_path: "/boot/tune.wav"
+button_GPIO: 23
+LED_GPIO: 24
+output_device: 1 # 1 = ANALOG; 2 = HDMI

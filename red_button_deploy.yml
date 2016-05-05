@@ -1,0 +1,54 @@
+---
+- hosts: raspberry_pi
+  vars_files:
+    - vars.yml
+
+  tasks:
+    # SETUP AUDIO
+    - name: Set default output device
+      command: amixer cset numid=3 {{ output_device }}
+
+    - name: Save audio current settings
+      command: alsactl store
+
+    - name: Copy Sound effect assets/tune.wav to defined sound path
+      copy: 
+        src: assets/tune.wav
+        dest: "{{sound_file_path}}"
+        owner: root
+        group: root
+        mode: 0751
+
+    # SETUP RED BUTTON PROJECT
+    - name: Create red_button repo directory
+      file: >
+        path=/home/{{ user }}/red_button
+        state=directory
+        owner={{ user }}
+
+    - name: Copy red_button.py to project path
+      template: >
+        src=templates/red_button.py.j2
+        dest=/home/{{ user }}/red_button/red_button.py
+        owner={{ user }}
+        mode=a+x
+
+    - name: Copy set_volume script to project path
+      template: >
+        src=assets/set_volume
+        dest=/home/{{ user }}/red_button/set_volume
+        owner={{ user }}
+        mode=a+x
+
+    # ENABLE SYSTEM SERVICE
+    - name: Copy red_button service script
+      template: >
+        src=templates/red_button.service.j2 
+        dest=/etc/systemd/system/red_button.service
+        mode=a+x
+
+    - name: Enable red_button startup service
+      service: name=red_button enabled=yes
+
+    - name: Restart red_button service
+      service: name=red_button state=restarted

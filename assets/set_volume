@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+if [[ $1 != "" ]]
+then
+  echo "amixer set PCM $1% &>/dev/null"
+  bash -c "amixer set PCM $1% &>/dev/null"
+fi

@@ -1,0 +1,136 @@
+#!/usr/bin/python2
+
+# The MIT License (MIT)
+#
+# Copyright (c) 2014 Austin Hyde
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+
+
+import sys, os, subprocess
+import logging
+from time import sleep
+
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
+
+import RPi.GPIO as GPIO
+import pygame
+
+# VARIABLES
+BUTTON_GPIO = {{ button_GPIO }}
+LED_GPIO    = {{ LED_GPIO}}
+
+SOUND_FILE = "{{ sound_file_path }}"
+
+
+# INITIALISATION
+pygame.mixer.init()
+
+sound = False
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.BCM)
+
+# Set internal resistor to pull-up (as pin is grounded on press)
+GPIO.setup(BUTTON_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+GPIO.setup(LED_GPIO, GPIO.OUT)
+
+
+# VOLUME FUNCTIONS
+def set_volume(vol):
+  """
+    Set output volume (given a percentage)
+  """
+
+  log.debug("Set volume: " + str(vol) + "%")
+  subprocess.call(["/home/{{ user }}/red_button/set_volume", str(vol)], 
+                  stdout=open(os.devnull, "w"), stderr=subprocess.STDOUT)
+
+def mute_volume():
+  """
+    Mute the system volume
+  """
+
+  set_volume(0) 
+
+
+# SFX
+def load_sound(file_path):
+  log.debug("Loading sound: " + str(file_path))
+  return pygame.mixer.Sound(file_path)
+
+def play_sound(sound):
+  """
+    Unmutes sound output, plays sound, 
+    and mutes output again
+  """
+  set_volume(100)
+  sound_length = sound.get_length()
+  log.info("Playing tune...")
+  sound.play()
+  sleep(sound_length + 1)
+  mute_volume()
+
+
+# BUTTON HANDLER
+def button_on_press():
+  global sound
+  
+  log.info("Button pressed")
+  GPIO.output(LED_GPIO, True)
+  play_sound(sound)
+  GPIO.output(LED_GPIO, False)
+  log.info("Waiting for press")
+
+def check_button():
+  if(GPIO.input(BUTTON_GPIO) == 0):
+    button_on_press()
+
+
+# STARTUP
+def startup_blink():
+  log.debug("Startup blink")
+  GPIO.output(LED_GPIO, True)
+  sleep(0.5)
+  GPIO.output(LED_GPIO, False)
+  sleep(0.5)
+  GPIO.output(LED_GPIO, True)
+  sleep(0.5)
+  GPIO.output(LED_GPIO, False)
+
+
+# MAIN
+def main():
+  global sound
+  
+  try:
+    log.info("Red Button loaded.")
+    sound = load_sound(SOUND_FILE)
+    startup_blink()
+    while True:
+      check_button()
+  except:
+    print("Exiting...")
+    GPIO.cleanup()
+    sys.exit(0)
+
+
+if __name__ == "__main__":
+  main()

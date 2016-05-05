@@ -1,0 +1,75 @@
+---
+- hosts: raspberry_pi
+  vars_files:
+    - vars.yml
+  gather_facts: False
+
+  tasks:
+    # SYSTEM UPGRADE
+    - name: Update package database and upgrade
+      raw: pacman -Syu --noconfirm
+
+    # ANSIBLE DEPENDENCY
+    - name: Install python 2
+      raw: pacman -S --noconfirm --needed python2
+
+    # SYSTEM SETUP
+    - name: Copy config.txt.j2 to /boot/config.txt
+      template:
+        src: templates/config.txt.j2
+        dest: /boot/config.txt
+        owner: root
+
+    # DEFAULT USER
+    - name: Create/Update the user account
+      user:
+        name: "{{ user }}"
+        shell: /bin/bash
+        state: present
+        groups: audio
+        append: yes
+
+    - name: Check /etc/systemd/system/getty@tty1.service.d/ dir exists
+      file: 
+        path: /etc/systemd/system/getty@tty1.service.d
+        state: directory
+
+    - name: Copy getty-override.service.j2 (user auto-login)
+      template:
+        src: templates/getty-override.service.j2
+        dest: /etc/systemd/system/getty@tty1.service.d/override.conf
+        owner: root
+
+    # INSTALL DEPENDANCIES
+    - name: Install base-devel package
+      pacman: name=base-devel state=present
+
+    - name: Install packer package
+      pacman: name=packer state=present
+
+    - name: Install python2-pygame package
+      raw: packer -S --noconfirm python2-pygame
+
+    - name: Install python2-pip package
+      raw: packer -S --noconfirm python2-pip
+
+    - name: Install python2 RPi.GPIO package
+      command: pip2 install RPi.GPIO
+
+    # AUDIO
+    - name: Install alsa-firmware packages
+      pacman: name=alsa-firmware state=present
+
+    - name: Install alsa-lib packages
+      pacman: name=alsa-lib state=present
+
+    - name: Install alsa-utils packages
+      pacman: name=alsa-utils state=present
+
+    # RESTART
+    - name: restart machine
+      shell: sleep 2 && shutdown -r now "Ansible updates triggered"
+      async: 1
+      poll: 0
+      sudo: true
+      ignore_errors: true

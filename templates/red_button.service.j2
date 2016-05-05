@@ -1,0 +1,10 @@
+[Unit]
+Description=Red Button script
+After=network.target
+
+[Service]
+ExecStart=/home/{{ user }}/red_button/red_button.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
