@@ -36,14 +36,12 @@ $ nano rpi_host
 
 4\. On your local machine, run the following command to bootstrap the Raspberry Pi. Be aware that this may take more than 60 minutes as it performs a full system upgrade, and installs additional dependancies. Your Raspberry Pi should automatically restart after setup it is completed. The Pi will automaticaly restart when finished to complete the setup.
 ```bash
-$ ansible-playbook -i rpi_host --ask-pass red_button_init.yml
-# type 'alarm', when prompted for SSH password
+$ ansible-playbook -i rpi_host red_button_init.yml
  ```
 
 5\. Once your Pi is back online, run the following to deploy the project files.
 ```bash
-$ ansible-playbook -i rpi_host --ask-pass red_button_deploy.yml
-# type 'alarm', when prompted for 'SSH password'
+$ ansible-playbook -i rpi_host red_button_deploy.yml
  ```
 
 ### Custom sound effect
